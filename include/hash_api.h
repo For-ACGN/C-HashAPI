@@ -46,7 +46,7 @@ typedef struct {
 // FindAPI is support forwarded exports.
 // FindAPI is NOT support DLL about API Sets.
 //
-// When the procedure hash is HASH_API_ORDINAL, set the argument
+// When the procedure hash is HASHAPI_ORDINAL, set the argument
 // key to the target function ordinal for try to get it.
 //
 // FindAPI is NOT support multi forwarded exports with ordinal.
