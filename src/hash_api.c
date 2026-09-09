@@ -103,9 +103,14 @@ void* FindAPI_MAL(PML* pml, void* module, uint procedure, uint key)
     uintptr dllBase  = (uintptr)(module);
     uintptr ntOffset = (uintptr)(*(uint32*)(dllBase + DOS_HEADER_SIZE - 4));
     Image_NTHeaders* ntHeaders = (Image_NTHeaders*)(dllBase + ntOffset);
+    // check optional header magic
 #ifdef _WIN64
-    // check this module actually a x64 PE image
     if (ntHeaders->OptionalHeader.Magic != 0x020B)
+    {
+        return NULL;
+    }
+#elif _WIN32
+    if (ntHeaders->OptionalHeader.Magic != 0x010B)
     {
         return NULL;
     }
