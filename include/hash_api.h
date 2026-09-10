@@ -15,8 +15,12 @@
 // not loaded or the ordinal does not exist in that module.
 //
 // example:
+//   // the module address(HMODULE) is already known, key is the ordinal
 //   void* proc = FindAPI_MA(hKernel32, HASHAPI_ORDINAL, 0x0001);
-//   void* proc = FindAPI_MH(modHash,   HASHAPI_ORDINAL, 0x0001);
+//
+//   uint  hKey  = 0x0001 // same as ordinal
+//   uint  mHash = CalcModHash_A("kernel32.dll", hKey); // just example
+//   void* proc  = FindAPI_MH(mHash, HASHAPI_ORDINAL, hKey);
 //
 // The "DLL.#ordinal" forwarder is resolved by the same path.
 #define HASHAPI_ORDINAL 0xFFFFFFFF
@@ -62,10 +66,8 @@ typedef struct {
 // FindAPI is support forwarded exports.
 // FindAPI is NOT support DLL about API Sets.
 //
-// When the procedure hash is HASHAPI_ORDINAL, set the argument
-// key to the target function ordinal for try to get it.
-//
-// FindAPI is NOT support multi forwarded exports with ordinal.
+// When the procedure hash is HASHAPI_ORDINAL, set the argument key
+// to the target function ordinal for try to get it.
 
 // The ordinal is carried by "key" on purpose, it is not a spare slot:
 //   - "key" is the only parameter left for the ordinal, every other
