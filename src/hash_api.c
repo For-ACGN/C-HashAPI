@@ -22,6 +22,8 @@
 static uint calcSeedHash(uint key);
 static uint calcKeyHash(uint seed, uint key);
 static uint ror(uint value, uint bits);
+static void set_image_magic(void* ptr);
+static void set_signature(void* ptr);
 
 __declspec(noinline)
 void* FindMod_MH(uint module, uint key)
@@ -102,20 +104,27 @@ void* FindAPI_MAL(PML* pml, void* module, uint procedure, uint key)
     uint keyHash  = calcKeyHash(seedHash, key);
     // parse pe image structure
     uintptr dllBase  = (uintptr)(module);
+    // check image magic
+    byte magic[2];
+    set_image_magic(magic);
+    if (!strnequ_a(module, magic, 2))
+    {
+        return NULL;
+    }
     uintptr ntOffset = (uintptr)(*(uint32*)(dllBase + DOS_HEADER_SIZE - 4));
     Image_NTHeaders* ntHeaders = (Image_NTHeaders*)(dllBase + ntOffset);
+    // check NT header signature
+    byte signature[4];
+    set_signature(signature);
+    if (ntHeaders->Signature != *(DWORD*)signature)
+    {
+        return NULL;
+    }
     // check optional header magic
-#ifdef _WIN64
-    if (ntHeaders->OptionalHeader.Magic != 0x020B)
+    if (ntHeaders->OptionalHeader.Magic != IMAGE_OPT_HEADER_MAGIC)
     {
         return NULL;
     }
-#elif _WIN32
-    if (ntHeaders->OptionalHeader.Magic != 0x010B)
-    {
-        return NULL;
-    }
-#endif
     // get RVA of export address tables(EAT)
     Image_DataDirectory* DD = &ntHeaders->OptionalHeader.DataDirectory[0];
     Image_DataDirectory EAT = DD[IMAGE_DIRECTORY_ENTRY_EXPORT];
@@ -597,3 +606,21 @@ static uint64 ror64(uint64 value, uint64 bits)
 {
     return value >> bits | value << (64 - bits);
 }
+
+#pragma optimize("", off)
+static void set_image_magic(void* ptr)
+{
+    byte* magic = ptr;
+    magic[0] = 'M';
+    magic[1] = 'Z';
+}
+
+static void set_signature(void* ptr)
+{
+    byte* sign = ptr;
+    sign[0] = 'P';
+    sign[1] = 'E';
+    sign[2] = 0x00;
+    sign[3] = 0x00;
+}
+#pragma optimize("", on)
