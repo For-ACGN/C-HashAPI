@@ -2,6 +2,7 @@
 #include "win_types.h"
 #include "win_structs.h"
 #include "lib_memory.h"
+#include "lib_string.h"
 #include "pe_image.h"
 #include "hash_api.h"
 
@@ -209,12 +210,31 @@ void* FindAPI_MAL(PML* pml, void* module, uint procedure, uint key)
     dllName[dot + 4] = 0x00;
     // build procedure name
     byte* procName = (byte*)((uintptr)exportName + dot + 1);
-    // build module and procedure hash
-    uint mHash = CalcModHash_A(dllName, key);
-    uint pHash = CalcProcHash(procName, key);
+    // forwarder with procedure name
+    if (*procName != '#')
+    {
+        // build module and procedure hash
+        uint mHash = CalcModHash_A(dllName, key);
+        uint pHash = CalcProcHash(procName, key);
+        // erase data in the large stack
+        mem_init(dllName, sizeof(dllName));
+        return FindAPI_MHL(pml, mHash, pHash, key);
+    }
+    // support the ordinal forwarder: "<dll>.#<ordinal>"
+    uint ordinal = 0;
+    if (!str2uint_a(procName + 1, &ordinal))
+    {
+        // erase data in the large stack
+        mem_init(dllName, sizeof(dllName));
+        return NULL;
+    }
+    // when the procedure hash is HASHAPI_ORDINAL,
+    // the "key" argument is the target ordinal,
+    // so the module hash must use the same key
+    uint mHash = CalcModHash_A(dllName, ordinal);
     // erase data in the large stack
     mem_init(dllName, sizeof(dllName));
-    return FindAPI_MHL(pml, mHash, pHash, key);
+    return FindAPI_MHL(pml, mHash, HASHAPI_ORDINAL, ordinal);
 }
 
 __declspec(noinline)
