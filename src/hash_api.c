@@ -22,8 +22,6 @@
 static uint calcSeedHash(uint key);
 static uint calcKeyHash(uint seed, uint key);
 static uint ror(uint value, uint bits);
-static void set_image_magic(void* ptr);
-static void set_signature(void* ptr);
 
 __declspec(noinline)
 void* FindMod_MH(uint module, uint key)
@@ -105,8 +103,7 @@ void* FindAPI_MAL(PML* pml, void* module, uint procedure, uint key)
     // parse pe image structure
     uintptr dllBase  = (uintptr)(module);
     // check image magic
-    byte magic[2];
-    set_image_magic(magic);
+    byte magic[] = { 'M', 'Z' };
     if (!strnequ_a(module, magic, 2))
     {
         return NULL;
@@ -114,8 +111,7 @@ void* FindAPI_MAL(PML* pml, void* module, uint procedure, uint key)
     uintptr ntOffset = (uintptr)(*(uint32*)(dllBase + DOS_HEADER_SIZE - 4));
     Image_NTHeaders* ntHeaders = (Image_NTHeaders*)(dllBase + ntOffset);
     // check NT header signature
-    byte signature[4];
-    set_signature(signature);
+    byte signature[] = { 'P', 'E', 0x00, 0x00 };
     if (ntHeaders->Signature != *(DWORD*)signature)
     {
         return NULL;
@@ -606,21 +602,3 @@ static uint64 ror64(uint64 value, uint64 bits)
 {
     return value >> bits | value << (64 - bits);
 }
-
-#pragma optimize("", off)
-static void set_image_magic(void* ptr)
-{
-    byte* magic = ptr;
-    magic[0] = 'M';
-    magic[1] = 'Z';
-}
-
-static void set_signature(void* ptr)
-{
-    byte* sign = ptr;
-    sign[0] = 'P';
-    sign[1] = 'E';
-    sign[2] = 0x00;
-    sign[3] = 0x00;
-}
-#pragma optimize("", on)
